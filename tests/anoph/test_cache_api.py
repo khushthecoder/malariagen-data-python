@@ -81,7 +81,9 @@ def test_clear_cache_all(fixture, api):
 
     # Verify something is cached.
     info_before = api.cache_info()
-    has_entries = any(v["entries"] > 0 for v in info_before.values() if v["kind"] == "dict")
+    has_entries = any(
+        v["entries"] > 0 for v in info_before.values() if v["kind"] == "dict"
+    )
     assert has_entries, "Expected at least one populated dict cache"
 
     # Clear all.
