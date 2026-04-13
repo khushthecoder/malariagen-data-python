@@ -93,9 +93,9 @@ def test_clear_cache_all(fixture, api):
     info_after = api.cache_info()
     for attr_name, entry in info_after.items():
         if entry["kind"] == "dict":
-            assert entry["entries"] == 0, (
-                f"Cache {attr_name} still has {entry['entries']} entries after clear_cache()"
-            )
+            assert (
+                entry["entries"] == 0
+            ), f"Cache {attr_name} still has {entry['entries']} entries after clear_cache()"
 
 
 @parametrize_with_cases("fixture,api", cases=".")
@@ -112,9 +112,9 @@ def test_clear_cache_specific_category(fixture, api):
     # All "base" category caches should be empty.
     for attr_name in AnophelesBase._CACHE_CATEGORIES["base"]:
         if attr_name in info and info[attr_name]["kind"] == "dict":
-            assert info[attr_name]["entries"] == 0, (
-                f"Cache {attr_name} should be empty after clear_cache('base')"
-            )
+            assert (
+                info[attr_name]["entries"] == 0
+            ), f"Cache {attr_name} should be empty after clear_cache('base')"
 
 
 @parametrize_with_cases("fixture,api", cases=".")
