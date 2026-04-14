@@ -222,3 +222,79 @@ def test_clear_cache_direct_dict_manipulation():
     for entry in info.values():
         if entry["kind"] == "dict":
             assert entry["entries"] == 0
+
+
+def test_cache_info_and_clear_lru_cache():
+    """Test cache_info and clear_cache with lru_cache-wrapped functions."""
+    from functools import lru_cache
+
+    class FakeBase:
+        _CACHE_CATEGORIES = {
+            "base": ("_cache_releases",),
+        }
+
+        def __init__(self):
+            @lru_cache(maxsize=32)
+            def _releases_fn(key):
+                return key
+
+            self._cache_releases = _releases_fn
+
+        _iter_cache_attrs = AnophelesBase._iter_cache_attrs
+        _estimate_cache_entry_nbytes = staticmethod(
+            AnophelesBase._estimate_cache_entry_nbytes
+        )
+        cache_info = AnophelesBase.cache_info
+        clear_cache = AnophelesBase.clear_cache
+
+    fake = FakeBase()
+
+    # Populate the lru_cache.
+    fake._cache_releases("a")
+    fake._cache_releases("b")
+
+    info = fake.cache_info()
+    assert "_cache_releases" in info
+    assert info["_cache_releases"]["kind"] == "lru_cache"
+    assert info["_cache_releases"]["entries"] == 2
+
+    # Clear and verify.
+    fake.clear_cache("base")
+    info = fake.cache_info()
+    assert info["_cache_releases"]["entries"] == 0
+
+
+def test_cache_info_and_clear_single_value():
+    """Test cache_info and clear_cache with single-value (non-dict, non-lru) caches."""
+
+    class FakeBase:
+        _CACHE_CATEGORIES = {
+            "genome_sequence": ("_cache_genome",),
+        }
+
+        def __init__(self):
+            # Simulate a single-value cache (e.g. a zarr group stored directly).
+            self._cache_genome = np.zeros((10, 10), dtype=np.float64)
+
+        _iter_cache_attrs = AnophelesBase._iter_cache_attrs
+        _estimate_cache_entry_nbytes = staticmethod(
+            AnophelesBase._estimate_cache_entry_nbytes
+        )
+        cache_info = AnophelesBase.cache_info
+        clear_cache = AnophelesBase.clear_cache
+
+    fake = FakeBase()
+
+    info = fake.cache_info()
+    assert "_cache_genome" in info
+    assert info["_cache_genome"]["kind"] == "other"
+    assert info["_cache_genome"]["entries"] == 1
+    assert info["_cache_genome"]["nbytes"] == 800  # 10*10*8 bytes
+
+    # Clear and verify it gets set to None.
+    fake.clear_cache("genome_sequence")
+    assert fake._cache_genome is None
+
+    # After clearing, cache_info should not list it (it's None now).
+    info = fake.cache_info()
+    assert "_cache_genome" not in info
